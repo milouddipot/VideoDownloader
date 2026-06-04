@@ -7,18 +7,12 @@ def download(url, format_type, output_dir):
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
                 'quiet': True,
             }
         else:
             ydl_opts = {
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
+                'format': 'best[ext=mp4]/best',
                 'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-                'merge_output_format': 'mp4',
                 'quiet': True,
             }
 
