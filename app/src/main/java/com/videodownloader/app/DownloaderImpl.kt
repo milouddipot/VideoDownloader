@@ -23,21 +23,37 @@ class DownloaderImpl private constructor() : Downloader() {
         connection.requestMethod = request.httpMethod()
         connection.connectTimeout = 30000
         connection.readTimeout = 30000
-        connection.setRequestProperty(
-            "User-Agent",
-            "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 Chrome/121.0.0.0 Mobile Safari/537.36"
-        )
+        connection.instanceFollowRedirects = true
+
+        connection.setRequestProperty("User-Agent",
+            "com.google.android.youtube/19.09.37 (Linux; U; Android 13; Pixel 7 Build/TQ3A.230901.001) gzip")
+        connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
+        connection.setRequestProperty("Accept", "*/*")
+        connection.setRequestProperty("X-YouTube-Client-Name", "3")
+        connection.setRequestProperty("X-YouTube-Client-Version", "19.09.37")
 
         request.headers().forEach { (key, values) ->
             values.forEach { value -> connection.setRequestProperty(key, value) }
         }
 
+        val body = request.dataToSend()
+        if (body != null) {
+            connection.doOutput = true
+            connection.outputStream.write(body)
+        }
+
         val responseCode = connection.responseCode
-        val responseBody = connection.inputStream.bufferedReader().readText()
+        val responseBody = try {
+            connection.inputStream.bufferedReader().readText()
+        } catch (e: Exception) {
+            connection.errorStream?.bufferedReader()?.readText() ?: ""
+        }
+
         val responseHeaders = connection.headerFields
             .filter { it.key != null }
             .mapValues { it.value }
 
-        return Response(responseCode, connection.responseMessage, responseHeaders, responseBody, request.url())
+        return Response(responseCode, connection.responseMessage,
+            responseHeaders, responseBody, request.url())
     }
 }
