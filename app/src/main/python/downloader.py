@@ -1,18 +1,31 @@
-import yt_dlp
+import subprocess
+import sys
 import os
 import re
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/121.0.0.0 Mobile Safari/537.36"
-    )
-}
+def _update_ytdlp():
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp", "--quiet"],
+            capture_output=True
+        )
+    except:
+        pass
 
 def download(url, format_type, output_dir):
     try:
+        _update_ytdlp()
+        import yt_dlp
+
         os.makedirs(output_dir, exist_ok=True)
+
+        HEADERS = {
+            "User-Agent": (
+                "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/121.0.0.0 Mobile Safari/537.36"
+            )
+        }
 
         if format_type == "mp3":
             format_str = (
@@ -50,7 +63,7 @@ def download(url, format_type, output_dir):
     except Exception as e:
         err = re.sub(r"\x1b\[[0-9;]*m", "", str(e)).strip()
         if "ffmpeg" in err.lower():
-            return "خطأ: ffmpeg غير مثبت — جرب جودة أقل"
+            return "خطأ: ffmpeg غير مثبت"
         elif "private" in err.lower() or "login" in err.lower():
             return "خطأ: الفيديو خاص أو يتطلب تسجيل دخول"
         elif "not available" in err.lower():
