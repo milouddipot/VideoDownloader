@@ -3,7 +3,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://chaquo.com/maven") }
     }
 }
 dependencyResolutionManagement {
@@ -11,7 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://chaquo.com/maven") }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 rootProject.name = "VideoDownloader"

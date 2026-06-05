@@ -1,10 +1,3 @@
 <resources>
-    <string name="app_name">Video Downloader</string>
-    <string name="paste_link">الصق رابط الفيديو هنا</string>
-    <string name="download_mp4">تحميل MP4</string>
-    <string name="download_mp3">تحميل MP3</string>
-    <string name="downloading">جاري التحميل...</string>
-    <string name="download_complete">اكتمل التحميل!</string>
-    <string name="download_error">حدث خطأ في التحميل</string>
-    <string name="open_file">فتح الملف</string>
+    <string name="app_name">YT Downloader</string>
 </resources>

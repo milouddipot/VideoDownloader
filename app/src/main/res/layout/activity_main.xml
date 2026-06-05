@@ -4,15 +4,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#121212">
+    android:background="#0F0F0F">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Video Downloader"
-        android:textSize="28sp"
+        android:text="YT Downloader"
+        android:textSize="26sp"
         android:textStyle="bold"
-        android:textColor="#FFFFFF"
+        android:textColor="#FF0000"
         android:gravity="center"
         android:layout_marginBottom="32dp"/>
 
@@ -21,7 +21,7 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/paste_link"
+        android:hint="الصق رابط يوتيوب"
         android:layout_marginBottom="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -34,34 +34,62 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
+        android:id="@+id/btnFetch"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="جلب معلومات الفيديو"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#FF0000"/>
+
+    <ImageView
+        android:id="@+id/thumbnail"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:layout_marginBottom="12dp"/>
+
+    <TextView
+        android:id="@+id/videoTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
         android:id="@+id/btnMp4"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="@string/download_mp4"
+        android:text="تحميل MP4"
+        android:visibility="gone"
         android:layout_marginBottom="12dp"
-        android:backgroundTint="#1565C0"/>
+        android:backgroundTint="#FF0000"/>
 
     <Button
         android:id="@+id/btnMp3"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="@string/download_mp3"
-        android:layout_marginBottom="24dp"
-        android:backgroundTint="#FF6F00"/>
+        android:text="تحميل MP3"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#222222"/>
 
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="12dp"/>
 
     <TextView
         android:id="@+id/statusText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="#FFFFFF"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:gravity="center"
         android:visibility="gone"/>
 
