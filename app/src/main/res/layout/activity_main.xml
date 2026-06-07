@@ -34,37 +34,10 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
-        android:id="@+id/btnFetch"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="جلب معلومات الفيديو"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="#FF0000"/>
-
-    <ImageView
-        android:id="@+id/thumbnail"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:scaleType="centerCrop"
-        android:visibility="gone"
-        android:layout_marginBottom="12dp"/>
-
-    <TextView
-        android:id="@+id/videoTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:gravity="center"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
         android:id="@+id/btnMp4"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:text="تحميل MP4"
-        android:visibility="gone"
         android:layout_marginBottom="12dp"
         android:backgroundTint="#FF0000"/>
 
@@ -73,8 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:text="تحميل MP3"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#222222"/>
 
     <ProgressBar
