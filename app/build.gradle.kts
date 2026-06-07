@@ -21,9 +21,7 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
+        release { isMinifyEnabled = false }
     }
 
     compileOptions {
@@ -31,18 +29,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+    kotlinOptions { jvmTarget = "1.8" }
 
-    buildFeatures {
-        viewBinding = true
-    }
+    buildFeatures { viewBinding = true }
 }
 
 chaquopy {
     defaultConfig {
-        // لا نثبت yt-dlp هنا — سيُحمَّل runtime
+        pip {
+            install("yt-dlp==2026.3.17")
+        }
     }
 }
 
