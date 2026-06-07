@@ -35,6 +35,9 @@ android {
 
 chaquopy {
     defaultConfig {
+        pyPip {
+            options("--extra-index-url", "https://pypi.org/simple")
+        }
         pip {
             install("yt-dlp==2024.10.22")
         }
