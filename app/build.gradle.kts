@@ -30,14 +30,13 @@ android {
     }
 
     kotlinOptions { jvmTarget = "1.8" }
-
     buildFeatures { viewBinding = true }
 }
 
 chaquopy {
     defaultConfig {
         pip {
-            install("yt-dlp==2026.3.17")
+            install("yt-dlp==2024.10.22")
         }
     }
 }
