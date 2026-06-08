@@ -27,22 +27,29 @@ jobs:
             libffi-dev libssl-dev build-essential
 
       - name: Install Buildozer
-        run: |
-          pip install buildozer cython
-
-      - name: Accept Android licenses
-        run: |
-          mkdir -p ~/.android
-          touch ~/.android/repositories.cfg
-          yes | buildozer android debug 2>&1 | head -5 || true
-          find ~/.buildozer -name "sdkmanager" 2>/dev/null | head -1 | xargs -I{} sh -c 'yes | {} --licenses' || true
+        run: pip install buildozer cython
 
       - name: Build APK
         run: |
-          yes | buildozer android debug
+          yes | buildozer android debug 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show errors if failed
+        if: failure()
+        run: |
+          echo "========= ERRORS ONLY ========="
+          grep -i "error\|exception\|failed\|traceback" build.log | tail -50
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VideoDownloader
           path: bin/*.apk
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
