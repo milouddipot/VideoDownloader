@@ -16,7 +16,16 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}:/home/user/hostcwd \
             kivy/buildozer:latest \
-            android debug
+            android debug 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show errors if failed
+        if: failure()
+        run: |
+          echo "========= ERRORS ONLY ========="
+          grep -i "error\|failed\|exception\|traceback" build.log \
+            | grep -v "\.pyc\|Compiling\|adding:\|copy \." \
+            | tail -30
 
       - name: Upload APK
         if: success()
@@ -24,3 +33,10 @@ jobs:
         with:
           name: VideoDownloader
           path: bin/*.apk
+
+      - name: Upload log if failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
