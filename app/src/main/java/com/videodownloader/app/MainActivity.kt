@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
 
         ytDlpPath = setupYtDlp()
+        showStatus("yt-dlp: $ytDlpPath")
 
         intent?.getStringExtra(android.content.Intent.EXTRA_TEXT)?.let {
             urlEditText.setText(it)
@@ -39,24 +40,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupYtDlp(): String {
-        val ytDlpFile = File(applicationInfo.nativeLibraryDir).parentFile
-            ?.let { File(it, "yt-dlp") }
-            ?: File(filesDir, "yt-dlp")
+        val extDir = getExternalFilesDir(null) ?: filesDir
+        val ytDlpFile = File(extDir, "yt-dlp")
 
-        val ytDlpInCache = File(cacheDir, "yt-dlp")
-
-        if (!ytDlpInCache.exists()) {
+        if (!ytDlpFile.exists() || ytDlpFile.length() == 0L) {
             assets.open("yt-dlp").use { input ->
-                ytDlpInCache.outputStream().use { output ->
+                ytDlpFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
         }
 
-        ytDlpInCache.setExecutable(true, false)
-        ytDlpInCache.setReadable(true, false)
+        Runtime.getRuntime().exec("chmod 755 ${ytDlpFile.absolutePath}").waitFor()
 
-        return ytDlpInCache.absolutePath
+        return ytDlpFile.absolutePath
     }
 
     private fun startDownload(format: String) {
