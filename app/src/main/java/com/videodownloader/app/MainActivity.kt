@@ -16,7 +16,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnMp3: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var statusText: TextView
-
     private lateinit var ytDlpPath: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,16 +39,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupYtDlp(): String {
-        val ytDlpFile = File(filesDir, "yt-dlp")
-        if (!ytDlpFile.exists()) {
+        val ytDlpFile = File(applicationInfo.nativeLibraryDir).parentFile
+            ?.let { File(it, "yt-dlp") }
+            ?: File(filesDir, "yt-dlp")
+
+        val ytDlpInCache = File(cacheDir, "yt-dlp")
+
+        if (!ytDlpInCache.exists()) {
             assets.open("yt-dlp").use { input ->
-                ytDlpFile.outputStream().use { output ->
+                ytDlpInCache.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
-            ytDlpFile.setExecutable(true)
         }
-        return ytDlpFile.absolutePath
+
+        ytDlpInCache.setExecutable(true, false)
+        ytDlpInCache.setReadable(true, false)
+
+        return ytDlpInCache.absolutePath
     }
 
     private fun startDownload(format: String) {
@@ -96,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         val error = output.lines()
                             .filter { it.contains("ERROR", ignoreCase = true) }
-                            .lastOrNull() ?: "خطأ غير معروف"
+                            .lastOrNull() ?: output.takeLast(200)
                         showStatus("خطأ: $error")
                     }
                 }
