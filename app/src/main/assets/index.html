@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Text Analyzer with Highlighting, Splitting, and Translation</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align container to top */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px; /* Adjusted gap */
+        }
+
+        h1 {
+            text-align: center;
+            color: #0056b3;
+            margin-bottom: 10px; /* Reduced margin */
+            font-size: 1.8em; /* Adjusted size */
+        }
+
+        /* --- Text Area & Highlight Layer --- */
+        .text-area-container {
+            position: relative; /* Needed for absolute positioning of highlight layer */
+            width: 100%;
+            height: 280px; /* Set a fixed height for the container */
+            border: 1px solid #ccc; /* Border for the container */
+            border-radius: 8px;
+            overflow: hidden; /* Hide overflow from inner elements */
+        }
+
+        /* Highlight Layer (Behind Textarea) */
+        #highlight-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 15px; /* MUST match textarea padding */
+            font-family: inherit; /* Match textarea font */
+            font-size: 1rem; /* Match textarea font */
+            line-height: 1.5; /* Match textarea font */
+            color: transparent; /* Make text invisible, only background shows */
+            background: transparent;
+            overflow: auto; /* Allow scrolling */
+            z-index: 1;
+            pointer-events: none; /* Allow clicks to go through to textarea */
+            white-space: pre-wrap; /* Preserve whitespace and wrap */
+            word-wrap: break-word; /* Break long words */
+            border: none; /* No border needed here */
+        }
+
+        /* The actual Text Area (On Top) */
+        textarea#text-input {
+            position: absolute; /* Position relative to container */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Fill the container */
+            padding: 15px; /* MUST match highlight layer padding */
+            border: none; /* Border is on the container now */
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: none; /* Resizing handled by container potentially */
+            box-shadow: none; /* Remove default shadow */
+            background-color: transparent; /* See highlight layer behind */
+            color: #333; /* Actual text color */
+            z-index: 2; /* Position above the highlight layer */
+            overflow: auto; /* Allow scrolling */
+            font-family: inherit; /* Ensure font consistency */
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        textarea#text-input:focus {
+            outline: none; /* Outline handled by container potentially, or add custom */
+            /* Optional: add focus style to container */
+        }
+        .text-area-container:focus-within {
+             border-color: #0056b3;
+             box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
+        }
+
+        /* Highlight Span Style */
+        .highlight {
+            background-color: #a0e8fc; /* Light blue background */
+            color: transparent; /* Keep text transparent */
+            border-radius: 3px;
+            box-shadow: 0 0 0 1px #a0e8fc; /* Ensure full background coverage */
+        }
+
+        /* Counts Display */
+        .counts {
+            display: flex;
+            justify-content: space-around;
+            background-color: #e9ecef;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #495057;
+            margin-top: 5px; /* Add some space after textarea container */
+        }
+
+        .counts span {
+            font-weight: bold;
+            color: #0056b3;
+            margin-left: 5px;
+        }
+
+        /* --- NEW --- Top Button Bar (Copy & Upload) */
+        .top-button-bar {
+             display: flex;
+             justify-content: center; /* Or flex-start / space-around */
+             gap: 10px;
+             flex-wrap: wrap;
+             margin-top: 5px; /* Space below counts */
+        }
+
+        /* Search and Replace Section */
+        .find-replace-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            /* margin-bottom: 15px; Removed, handled by container gap */
+        }
+        .find-replace {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .find-replace input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            min-width: 120px; /* Adjusted min-width */
+        }
+
+        .find-replace button {
+            padding: 10px 15px;
+        }
+
+        /* Search Feedback Area */
+        #search-feedback {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #0056b3; /* Default info color */
+            min-height: 18px; /* Reserve space */
+            text-align: center;
+        }
+         #search-feedback.error {
+            color: #dc3545; /* Red for errors */
+         }
+         #search-feedback.success {
+             color: #28a745; /* Green for success */
+         }
+
+        /* Text Splitting Section */
+        .split-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            /* margin-bottom: 15px; Removed, handled by container gap */
+        }
+
+        .split-options {
+            display: flex;
+            flex-direction: column; /* Stack options vertically */
+            gap: 12px; /* Space between options */
+            margin-bottom: 15px;
+        }
+        .split-option { /* Wrapper for each option type */
+             display: flex;
+             flex-wrap: wrap; /* Allow wrapping on small screens */
+             gap: 8px;
+             align-items: center;
+             padding: 8px;
+             border-radius: 5px;
+             background-color: #e9ecef; /* Light background for options */
+        }
+
+        .split-options label {
+            font-size: 0.95rem;
+            color: #495057;
+            margin-right: 5px; /* Space after label */
+        }
+
+        .split-options input[type="number"],
+        .split-options input[type="text"] /* Style for new text inputs */ {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            width: 80px; /* Default width for number */
+        }
+        .split-options input[type="text"] {
+             width: 100px; /* Slightly wider for words */
+        }
+
+        #split-button { /* Moved button outside options */
+             margin-top: 10px; /* Space above button */
+             align-self: center; /* Center the button */
+        }
+
+
+        .split-results {
+            margin-top: 15px;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+        }
+
+        .split-part {
+            background-color: #e9ecef;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .split-part pre { /* Use pre for split text display */
+             white-space: pre-wrap; /* Wrap text */
+             word-wrap: break-word; /* Break long words */
+             margin: 0;
+             padding: 0;
+             font-family: inherit;
+             font-size: inherit;
+        }
+
+        .split-part-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            align-items: center; /* Align items vertically */
+        }
+
+        .split-part-actions button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        .split-part-actions select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+
+        /* Cleaning Actions Section */
+        .cleaning-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            /* margin-bottom: 15px; Removed, handled by container gap */
+        }
+        .clean-button { background-color: #6c757d; color: white; }
+        .clean-button:hover { background-color: #5a6268; }
+
+
+        /* Buttons Styling */
+        .actions /* Now only contains Download and Clear */ {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button, .file-upload-label {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: center;
+        }
+
+        button:hover, .file-upload-label:hover {
+            background-color: #0056b3;
+        }
+
+        button:active, .file-upload-label:active {
+            transform: scale(0.98);
+        }
+
+        /* Specific Button Colors */
+        #find-button { background-color: #6f42c1; /* Purple */ }
+        #find-button:hover { background-color: #5a32a3; }
+        #replace-button { background-color: #6f42c1; /* Same as Find */ }
+        #replace-button:hover { background-color: #5a32a3; }
+
+        #clear-button { background-color: #dc3545; }
+        #clear-button:hover { background-color: #c82333; }
+        #copy-button { background-color: #28a745; }
+        #copy-button:hover { background-color: #218838; }
+        #download-button { background-color: #ffc107; color: #333; }
+        #download-button:hover { background-color: #e0a800; }
+        #file-input { display: none; }
+        .file-upload-label { background-color: #17a2b8; display: inline-block; }
+        .file-upload-label:hover { background-color: #138496; }
+        #split-button { background-color: #fd7e14; }
+        #split-button:hover { background-color: #e06c00; }
+        .translate-button { background-color: #00c853; color: white; }
+        .translate-button:hover { background-color: #00a53e; }
+
+        /* General Feedback Message */
+        .feedback {
+            text-align: center;
+            color: green;
+            font-weight: bold;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            body { padding: 10px; align-items: flex-start; }
+            .container { padding: 15px; gap: 15px; } /* Slightly reduced gap */
+            h1 { font-size: 1.5em; }
+            .text-area-container { height: 200px; } /* Adjust height */
+            .counts { flex-direction: column; align-items: center; gap: 5px; }
+            .top-button-bar { justify-content: center; /* Center buttons */ }
+            .find-replace-container { padding: 10px; }
+            .find-replace { flex-direction: column; align-items: stretch; }
+            .split-options { gap: 10px; } /* Adjust gap */
+            .split-option { flex-direction: column; align-items: flex-start; padding: 6px;} /* Stack label/inputs */
+            .split-options input[type="number"],
+            .split-options input[type="text"] { width: 100%; } /* Full width on mobile */
+            .split-part-actions { flex-direction: column; align-items: stretch; }
+            .actions, .cleaning-actions { flex-direction: column; align-items: stretch; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Advanced Text Analyzer</h1>
+
+        <div class="text-area-container">
+            <div id="highlight-layer" aria-hidden="true"></div>
+            <textarea id="text-input" placeholder="Type, paste, or upload text here..." spellcheck="false"></textarea>
+        </div>
+
+        <div class="counts">
+            <div>Characters: <span id="char-count">0</span></div>
+            <div>Words: <span id="word-count">0</span></div>
+        </div>
+
+        <div class="top-button-bar">
+             <input type="file" id="file-input" accept=".txt">
+             <label for="file-input" class="file-upload-label">Upload Text File (.txt)</label>
+             <button id="copy-button">Copy Text</button>
+        </div>
+        <div class="find-replace-container">
+            <div class="find-replace">
+                <input type="text" id="find-text" placeholder="Word to find">
+                <input type="text" id="replace-text" placeholder="Replace with (optional)">
+                <button id="find-button">Find</button>
+                <button id="replace-button">Replace All</button>
+            </div>
+            <div id="search-feedback"></div>
+        </div>
+
+        <div class="split-container">
+            <h2>Split Text</h2>
+            <div class="split-options">
+                <div class="split-option"> <input type="radio" id="split-by-chars" name="split-by" value="chars" checked>
+                    <label for="split-by-chars">By Characters:</label>
+                    <input type="number" id="chars-per-part" min="1" value="5000">
+                </div>
+                 <div class="split-option"> <input type="radio" id="split-by-words" name="split-by" value="words">
+                    <label for="split-by-words">By Words:</label>
+                    <input type="number" id="words-per-part" min="1" value="100">
+                </div>
+                 <div class="split-option"> <input type="radio" id="split-by-word-range" name="split-by" value="word-range">
+                     <label for="split-by-word-range">From Word:</label>
+                     <input type="text" id="start-word" placeholder="Start word">
+                     <label for="end-word">To Word:</label>
+                     <input type="text" id="end-word" placeholder="End word">
+                 </div>
+                 </div>
+             <button id="split-button">Split Text</button> <div class="split-results" id="split-results-container">
+                </div>
+        </div>
+
+        <div class="cleaning-actions">
+            <button id="trim-spaces-button" class="clean-button">Remove Extra Spaces</button>
+            <button id="remove-blank-lines-button" class="clean-button">Remove Blank Lines</button>
+            <button id="remove-duplicate-lines-button" class="clean-button">Remove Duplicate Lines</button>
+        </div>
+
+        <div class="actions"> <button id="download-button">Download as .txt</button>
+            <button id="clear-button">Clear All</button>
+        </div>
+
+        <div class="feedback" id="feedback-message"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get elements
+            const textArea = document.getElementById('text-input');
+            const highlightLayer = document.getElementById('highlight-layer');
+            const charCountSpan = document.getElementById('char-count');
+            const wordCountSpan = document.getElementById('word-count');
+            const findInput = document.getElementById('find-text');
+            const replaceInput = document.getElementById('replace-text');
+            const findButton = document.getElementById('find-button');
+            const replaceButton = document.getElementById('replace-button');
+            const searchFeedback = document.getElementById('search-feedback');
+            const copyButton = document.getElementById('copy-button'); // Still needed
+            const downloadButton = document.getElementById('download-button');
+            const clearButton = document.getElementById('clear-button');
+            const fileInput = document.getElementById('file-input'); // Still needed
+            const feedbackMessage = document.getElementById('feedback-message');
+
+            // Split text elements
+            const splitByCharsRadio = document.getElementById('split-by-chars');
+            const splitByWordsRadio = document.getElementById('split-by-words');
+            const charsPerPartInput = document.getElementById('chars-per-part');
+            const wordsPerPartInput = document.getElementById('words-per-part');
+            // === NEW SPLIT ELEMENTS ===
+            const splitByWordRangeRadio = document.getElementById('split-by-word-range');
+            const startWordInput = document.getElementById('start-word');
+            const endWordInput = document.getElementById('end-word');
+            // === END NEW SPLIT ELEMENTS ===
+            const splitButton = document.getElementById('split-button');
+            const splitResultsContainer = document.getElementById('split-results-container');
+
+            // Cleaning actions buttons
+            const trimSpacesButton = document.getElementById('trim-spaces-button');
+            const removeBlankLinesButton = document.getElementById('remove-blank-lines-button');
+            const removeDuplicateLinesButton = document.getElementById('remove-duplicate-lines-button');
+
+            // --- Event Listeners ---
+
+            textArea.addEventListener('input', () => {
+                updateCounts();
+                clearHighlightAndSearchFeedback();
+            });
+            textArea.addEventListener('scroll', () => {
+                 highlightLayer.scrollTop = textArea.scrollTop;
+                 highlightLayer.scrollLeft = textArea.scrollLeft;
+             });
+
+            findButton.addEventListener('click', findAndHighlight);
+            replaceButton.addEventListener('click', performReplace);
+            copyButton.addEventListener('click', copyText); // Listener remains
+            downloadButton.addEventListener('click', downloadText);
+            clearButton.addEventListener('click', clearAll);
+            fileInput.addEventListener('change', handleFileUpload); // Listener remains
+            splitButton.addEventListener('click', splitTextHandler); // Handles all split types now
+            trimSpacesButton.addEventListener('click', trimSpaces);
+            removeBlankLinesButton.addEventListener('click', removeBlankLines);
+            removeDuplicateLinesButton.addEventListener('click', removeDuplicateLines);
+
+            // --- Functions ---
+
+            // 1. Update Counts
+            function updateCounts() {
+                const text = textArea.value;
+                charCountSpan.textContent = text.length;
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                wordCountSpan.textContent = text.trim() === '' ? 0 : words.length;
+                clearFeedback();
+            }
+
+            // Helper: Escape HTML
+             function escapeHTML(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+             }
+
+             // Helper: Escape RegExp
+             function escapeRegExp(string) {
+                 return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+             }
+
+            // 2. Find and Highlight
+            function findAndHighlight() {
+                const searchTerm = findInput.value;
+                const text = textArea.value;
+                clearHighlightAndSearchFeedback();
+
+                if (!searchTerm) {
+                    showSearchFeedback('Please enter text to find.', 'error');
+                    return;
+                }
+                if (!text) {
+                    showSearchFeedback('Text area is empty.', 'info');
+                    return;
+                }
+
+                const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
+                let matches = text.match(regex);
+                let count = matches ? matches.length : 0;
+                if (count > 0) {
+                    const highlightedHTML = text.replace(regex, (match) =>
+                        `<span class="highlight">${escapeHTML(match)}</span>`
+                    );
+                    highlightLayer.innerHTML = highlightedHTML;
+                    showSearchFeedback(`Found "${searchTerm}" ${count} time(s).`, 'success');
+                } else {
+                    highlightLayer.innerHTML = escapeHTML(text);
+                    showSearchFeedback(`"${searchTerm}" not found.`, 'info');
+                }
+                 highlightLayer.scrollTop = textArea.scrollTop;
+                 highlightLayer.scrollLeft = textArea.scrollLeft;
+            }
+
+            // 3. Search and Replace
+            function performReplace() {
+                const findText = findInput.value;
+                const replaceText = replaceInput.value;
+                const originalText = textArea.value;
+                if (!findText) {
+                    showFeedback('Please enter text to find for replacement.', 'error');
+                    return;
+                 }
+
+                 const regex = new RegExp(escapeRegExp(findText), 'gi');
+                 const newText = originalText.replace(regex, replaceText);
+
+                if (originalText !== newText) {
+                    textArea.value = newText;
+                    updateCounts();
+                    clearHighlightAndSearchFeedback();
+                    showFeedback(`Replaced all occurrences of "${findText}".`, 'success');
+                } else {
+                    showFeedback(`"${findText}" not found for replacement.`, 'info');
+                    clearHighlightAndSearchFeedback();
+                }
+            }
+
+            // 4. Copy Text
+            function copyText() {
+                 if (navigator.clipboard && navigator.clipboard.writeText) {
+                     navigator.clipboard.writeText(textArea.value)
+                         .then(() => showFeedback('Text copied to clipboard!', 'success'))
+                         .catch(err => {
+                             console.error('Clipboard copy failed:', err);
+                             try {
+                                 textArea.select();
+                                 document.execCommand('copy');
+                                 showFeedback('Text copied (fallback method)!', 'success');
+                             } catch (fallbackErr) {
+                                 showFeedback('Copying failed.', 'error');
+                             }
+                         });
+                 } else {
+                      try {
+                          textArea.select();
+                          document.execCommand('copy');
+                          showFeedback('Text copied (legacy method)!', 'success');
+                      } catch (err) {
+                          showFeedback('Clipboard API not available. Could not copy.', 'error');
+                      }
+                 }
+            }
+
+            // 5. Download Text
+            function downloadText() {
+                const text = textArea.value;
+                 const filename = "edited_text.txt";
+                 const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                 const link = document.createElement('a');
+                 link.href = URL.createObjectURL(blob);
+                 link.download = filename;
+                 document.body.appendChild(link);
+                 link.click();
+                 document.body.removeChild(link);
+                 URL.revokeObjectURL(link.href);
+                 showFeedback('Download initiated.', 'success');
+            }
+
+            // 6. Clear All
+            function clearAll() {
+                textArea.value = '';
+                findInput.value = '';
+                replaceInput.value = '';
+                fileInput.value = ''; // Clear file input selection
+                splitResultsContainer.innerHTML = '';
+                // === Clear new split inputs ===
+                startWordInput.value = '';
+                endWordInput.value = '';
+                // Reset radios and defaults (optional, but good practice)
+                splitByCharsRadio.checked = true;
+                charsPerPartInput.value = 5000;
+                wordsPerPartInput.value = 100;
+                // === End clear new split inputs ===
+                updateCounts();
+                clearHighlightAndSearchFeedback();
+                clearFeedback();
+            }
+
+            // 7. Handle File Upload
+            function handleFileUpload(event) {
+                 const file = event.target.files[0];
+                 if (!file) return;
+                 if (file.type !== 'text/plain') {
+                     showFeedback('Please upload a valid .txt file.', 'error');
+                     fileInput.value = ''; // Clear invalid selection
+                     return;
+                 }
+                 const reader = new FileReader();
+                 reader.onload = function(e) {
+                     textArea.value = e.target.result;
+                     updateCounts();
+                     clearHighlightAndSearchFeedback();
+                     showFeedback(`File "${file.name}" loaded successfully.`, 'success');
+                 };
+                 reader.onerror = function(e) {
+                     showFeedback('Error reading file.', 'error');
+                     console.error("File reading error:", e);
+                 };
+                 reader.readAsText(file);
+            }
+
+            // 8. Handle Text Splitting (UPDATED)
+            function splitTextHandler() {
+                const text = textArea.value;
+                splitResultsContainer.innerHTML = ''; // Clear previous results first
+
+                if (!text) {
+                    showFeedback('Please enter text to split.', 'info');
+                    return;
+                }
+
+                let parts = [];
+                const splitByChars = splitByCharsRadio.checked;
+                const splitByWords = splitByWordsRadio.checked;
+                const splitByRange = splitByWordRangeRadio.checked; // Check the new radio
+
+                try { // Add try...catch for potential errors during split logic
+                    if (splitByChars) {
+                        const charsPerPart = parseInt(charsPerPartInput.value, 10);
+                        if (isNaN(charsPerPart) || charsPerPart < 1) throw new Error('Please enter a valid number for characters per part.');
+                        for (let i = 0; i < text.length; i += charsPerPart) {
+                            parts.push(text.substring(i, i + charsPerPart));
+                        }
+                    } else if (splitByWords) {
+                        const wordsPerPart = parseInt(wordsPerPartInput.value, 10);
+                        if (isNaN(wordsPerPart) || wordsPerPart < 1) throw new Error('Please enter a valid number for words per part.');
+                        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                        if (words.length === 0) throw new Error('No words found in the text to split.');
+                        for (let i = 0; i < words.length; i += wordsPerPart) {
+                            parts.push(words.slice(i, i + wordsPerPart).join(' '));
+                        }
+                    // === NEW SPLIT LOGIC ===
+                    } else if (splitByRange) {
+                        const startWord = startWordInput.value.trim();
+                        const endWord = endWordInput.value.trim();
+                        if (!startWord || !endWord) throw new Error('Please enter both a start and an end word.');
+
+                        const textLower = text.toLowerCase(); // For case-insensitive search
+                        const startWordLower = startWord.toLowerCase();
+                        const endWordLower = endWord.toLowerCase();
+
+                        const startIndex = textLower.indexOf(startWordLower);
+                        if (startIndex === -1) throw new Error(`Start word "${startWord}" not found.`);
+
+                        // Search for end word *after* the start word
+                        const endIndexSearchStart = startIndex + startWord.length;
+                        const endIndex = textLower.indexOf(endWordLower, endIndexSearchStart);
+                        if (endIndex === -1) throw new Error(`End word "${endWord}" not found after the start word.`);
+
+                        // Extract the text including the start and end words
+                        const extractedText = text.substring(startIndex, endIndex + endWord.length);
+                        parts.push(extractedText); // Add the single extracted part
+                    // === END NEW SPLIT LOGIC ===
+                    } else {
+                         throw new Error('Please select a splitting method.'); // Should not happen if radios are set up correctly
+                    }
+
+                    // --- Display Results (Common for all methods) ---
+                    if (parts.length > 0) {
+                        parts.forEach((part, index) => {
+                            createSplitPartElement(part, index, parts.length);
+                        });
+                        showFeedback(`Text split into ${parts.length} part(s).`, 'success');
+                    } else {
+                        // This might happen if splitting by words and text has no words
+                        showFeedback('Could not split the text based on the criteria.', 'info');
+                    }
+
+                } catch (error) {
+                    showFeedback(error.message, 'error'); // Show error message to user
+                }
+            }
+
+            // Helper function to create and append a split part element
+            function createSplitPartElement(part, index, totalParts) {
+                 const partDiv = document.createElement('div');
+                 partDiv.classList.add('split-part');
+                 const partText = document.createElement('pre'); // Use <pre>
+                 partText.textContent = part;
+                 partDiv.appendChild(partText);
+
+                 const actionsDiv = document.createElement('div');
+                 actionsDiv.classList.add('split-part-actions');
+
+                 const partLabel = document.createElement('span'); // Add a label (optional)
+                 partLabel.textContent = `Part ${index + 1}${totalParts > 1 ? ` of ${totalParts}` : ''}:`;
+                 partLabel.style.marginRight = 'auto'; // Push buttons to the right
+                 partLabel.style.fontWeight = 'bold';
+                 actionsDiv.appendChild(partLabel);
+
+
+                 const copyPartButton = document.createElement('button');
+                 copyPartButton.textContent = 'Copy';
+                 copyPartButton.addEventListener('click', () => copySplitText(part, `Part ${index + 1}`));
+                 actionsDiv.appendChild(copyPartButton);
+
+                 const downloadPartButton = document.createElement('button');
+                 downloadPartButton.textContent = 'Download';
+                 downloadPartButton.addEventListener('click', () => downloadSplitText(part, `part_${index + 1}.txt`));
+                 actionsDiv.appendChild(downloadPartButton);
+
+                 // Add translation options
+                 const translateSelect = document.createElement('select');
+                 const languages = { 'ar': 'Arabic', 'fr': 'French', 'en': 'English' };
+                 for (const code in languages) {
+                     const option = document.createElement('option');
+                     option.value = code;
+                     option.textContent = languages[code];
+                     translateSelect.appendChild(option);
+                 }
+                 actionsDiv.appendChild(translateSelect);
+
+                 const translateButton = document.createElement('button');
+                 translateButton.textContent = 'Translate';
+                 translateButton.classList.add('translate-button');
+                 translateButton.addEventListener('click', () => translateText(part, translateSelect.value));
+                 actionsDiv.appendChild(translateButton);
+
+                 partDiv.appendChild(actionsDiv);
+                 splitResultsContainer.appendChild(partDiv);
+             }
+
+
+            // Helper: Copy Split Text
+            function copySplitText(text, partName) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text)
+                        .then(() => showFeedback(`${partName} copied to clipboard!`, 'success'))
+                        .catch(err => {
+                            console.error('Clipboard copy failed:', err);
+                            showFeedback(`Failed to copy ${partName}.`, 'error');
+                        });
+                } else {
+                    // Fallback
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = text;
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempTextArea);
+                    showFeedback(`${partName} copied to clipboard (fallback)!`, 'success');
+                }
+            }
+
+            // Helper: Download Split Text
+            function downloadSplitText(text, filename) {
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                showFeedback(`${filename} download initiated.`, 'success');
+            }
+
+             // Helper: Translate Text (opens Google Translate)
+            function translateText(text, targetLang) {
+                const sourceLang = 'auto';
+                const googleTranslateURL = `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodeURIComponent(text)}&op=translate`;
+                window.open(googleTranslateURL, '_blank', 'noopener,noreferrer');
+            }
+
+            // 9. Remove Extra Spaces
+            function trimSpaces() {
+                const text = textArea.value;
+                const trimmedText = text.replace(/\s+/g, ' ').trim();
+                if (text !== trimmedText) {
+                    textArea.value = trimmedText;
+                    updateCounts();
+                    clearHighlightAndSearchFeedback();
+                    showFeedback('Extra spaces removed.', 'success');
+                } else {
+                    showFeedback('No extra spaces to remove.', 'info');
+                }
+            }
+
+            // 10. Remove Blank Lines
+            function removeBlankLines() {
+                const text = textArea.value;
+                const lines = text.split('\n');
+                const nonBlankLines = lines.filter(line => line.trim() !== '');
+                const cleanedText = nonBlankLines.join('\n');
+                if (text !== cleanedText) {
+                    textArea.value = cleanedText;
+                    updateCounts();
+                    clearHighlightAndSearchFeedback();
+                    showFeedback('Blank lines removed.', 'success');
+                } else {
+                    showFeedback('No blank lines to remove.', 'info');
+                }
+            }
+
+            // 11. Remove Duplicate Lines
+            function removeDuplicateLines() {
+                const text = textArea.value;
+                const lines = text.split('\n');
+                // Keep the first occurrence, remove subsequent duplicates
+                const uniqueLines = lines.filter((line, index, self) =>
+                    index === self.findIndex((l) => l === line)
+                );
+                const cleanedText = uniqueLines.join('\n');
+                 if (text !== cleanedText) {
+                    textArea.value = cleanedText;
+                    updateCounts();
+                    clearHighlightAndSearchFeedback();
+                    showFeedback('Duplicate lines removed.', 'success');
+                } else {
+                    showFeedback('No duplicate lines to remove.', 'info');
+                }
+            }
+
+
+             // --- Feedback Utilities ---
+            let feedbackTimeout;
+            function showFeedback(message, type = 'info') {
+                 clearTimeout(feedbackTimeout);
+                 feedbackMessage.textContent = message;
+                 feedbackMessage.style.color = type === 'error' ? '#dc3545' : (type === 'success' ? '#28a745' : '#0056b3');
+                 feedbackTimeout = setTimeout(clearFeedback, 4000);
+            }
+            function clearFeedback() {
+                 feedbackMessage.textContent = '';
+            }
+
+            function showSearchFeedback(message, type = 'info') {
+                 searchFeedback.textContent = message;
+                 searchFeedback.className = type;
+            }
+            function clearSearchFeedback() {
+                 searchFeedback.textContent = '';
+                 searchFeedback.className = '';
+            }
+
+             function clearHighlightAndSearchFeedback() {
+                 // Only update highlight layer if text actually exists
+                 highlightLayer.innerHTML = textArea.value ? escapeHTML(textArea.value) : '';
+                 clearSearchFeedback();
+                 // Ensure scroll sync after clearing/resetting
+                 highlightLayer.scrollTop = textArea.scrollTop;
+                 highlightLayer.scrollLeft = textArea.scrollLeft;
+             }
+
+
+            // Initial setup
+            updateCounts();
+            highlightLayer.innerHTML = escapeHTML(textArea.value);
+            highlightLayer.scrollTop = textArea.scrollTop;
+            highlightLayer.scrollLeft = textArea.scrollLeft;
+        });
+    </script>
+
+</body>
+</html>
+
